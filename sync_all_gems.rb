@@ -1,11 +1,12 @@
 # this does install and generate rdocs
 
 if `hostname`.strip == "ilab1"
+    puts 'on ilab'
     on_ilab = true
 end
 
 ENV['GEM_PATH'] = '/home/rdp/dev/linode/installs/mbari_gembox_187/lib/ruby/gems/1.8' if on_ilab
-
+bin_dir = on_ilab ? '/home/rdp/dev/linode/installs/mbari_gembox_187/bin' : '.'
 generate_rdoc = ARGV[0] == '--generate_rdoc'
 
 
@@ -17,8 +18,9 @@ end
 
 
 all.each_line {|line| 
- puts 'here1'
+ puts 'here1' + line
  line =~ /(.*) \((.*)\)/
+ next unless $1
  name = $1
  versions = $2
  versions = versions.split(', ')
@@ -27,7 +29,7 @@ if generate_rdoc
  ARGV=['rdoc', name, '--no-ri']
  p 'ARGV is', ARGV
  Process.wait fork {
-  require './gem' # install rdocs appropo
+  load "#{bin_dir}/gem" # install rdocs appropo
  } 
  puts 'here--done with gem' + name
 else  
