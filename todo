@@ -1,0 +1,31 @@
+hanna gem rdocs
+
+better (conglom) core docs for the various versions
+some 'main page' so you can navigate from gem to core easily
+add an updater
+add in github gems, too :)
+(note the emails better)
+better than a pre for the descriptions
+do we use summaries?
+note that you can somehow never have to install those annoying rdocs again [and ri if you never use it for gems anyway]
+better domain (shared with someone else?)
+
+
+Gem rdoc???
+
+rdoc for gems that fail to build [?]
+
+gems that fail their binary compile
+
+better descriptions not just pre!
+
+
+rdp@li49-39:~/gembox_bin/downloads$ ../gem rdoc eventmachine --no-ri
+Installing RDoc documentation for eventmachine-0.12.8...
+Could not find main page README
+???
+
+core docs should "have good files" (good start, good included)
+core docs "include everything" (if so, would that help gems?)
+
+github gems
