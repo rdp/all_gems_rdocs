@@ -1,12 +1,17 @@
+actual todo:
+ no docs for rails? what?
+ better searches
+ add github
+ updater
+
 
 some 'main page' so you can navigate from gem to core easily
-add an updater
 add in github gems, too :)
 (note the emails better)
 
 better domain (shared with someone else?)
 
-add readme to the description
+add readme to the description [EM]
 
 Gem core rdoc for Gem class? huh?
 
@@ -14,13 +19,26 @@ rdoc for gems that fail to build [?]
 
 gems that fail their binary compile
 
-
-rdp@li49-39:~/gembox_bin/downloads$ ../gem rdoc eventmachine --no-ri
-Installing RDoc documentation for eventmachine-0.12.8...
-Could not find main page README
-???
+better search either verbose or not
 
 core docs should "have good files" (good start, good included)
-core docs "include everything" (if so, would that help gems?)
+core docs "include everything" (if helpful, would that help gems?)
 
-github gems
+general doc things:
+
+files should say what classes were in themselves! rdoc crashes at times!
+
+http://coredocs.faithpromotingstories.org/doc/ruby-1.8.6-p369/files/ruby-1_8_6-p369/lib/README.html is ugly
+
+does ri work if a method is redefined?
+
+shouldn't ri say *where* it got its info from? [some methods are from fileutils, etc.]
+
+
+report "these break rdoc!" things
+also does this?
+
+D:\dev\downloads\eventmachine-0.12.8>rdoc README lib/* -mREADME --op=rdoc5
+Parsing sources with 2 thread(s)...
+Unrecognized directive 'a' in lib/fastfilereaderext.so
+
