@@ -42,3 +42,10 @@ D:\dev\downloads\eventmachine-0.12.8>rdoc README lib/* -mREADME --op=rdoc5
 Parsing sources with 2 thread(s)...
 Unrecognized directive 'a' in lib/fastfilereaderext.so
 
+why doesn't my BigDecimal look as cool as the webri BigDecimal? huh?
+
+newest gem, too
+
+better layout for gembox page
+
+Proc in core doesn't mention call like it should?
