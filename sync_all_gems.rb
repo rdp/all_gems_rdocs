@@ -1,6 +1,6 @@
 # this does install and generate rdocs
 # requires
-#  cat ~/.gemrc
+#  $ cat ~/.gemrc
 #  rdoc: --inline-source --line-numbers --format=html --template=hanna
 #
 puts 'syntax: --generate_rdoc, --install-missing [do export...gem update for straight updates, too...]'
@@ -25,7 +25,7 @@ doctest: parses right
 def get_gems this_big_string
    all_gems = {}
    this_big_string.each_line {|line|
-      puts 'here1' + line
+
       line =~ /(.*) \((.*)\)/
       next unless $1 # first few lines are bunk [?] necessary?
       name = $1.strip # strip just in case...
@@ -37,9 +37,15 @@ def get_gems this_big_string
 end
 
 require 'hash_set_operators'
+class Object
+def in? coll
+ return coll.include? self
+end
+end
 
 if $0 == __FILE__
-   if ARGV[0] == '--generate_rdoc'
+   if ARGV[0] == '--generate_rdocs'
+      # shouldn't need to run this ever again
       require 'rubygems' # pre load it, so fork works and doesn't have to reload rubygems which takes forever
       all = `gem list -l`
       parsed = get_gems all
@@ -53,11 +59,28 @@ if $0 == __FILE__
          puts 'here--done with gem' + name
       }
    elsif ARGV[0] == '--install-missing'
-      all = `gem list -r` # we don't do gems.github.com yet
-      local = `gem list -l`
-      # gem list -r --source http://gems.github.com
-      # command = "gem install #{name} --version=#{versions.sort.last} --no-rdoc --no-ri"
-      # just in case system(command)
+      # note: this one assumes a correctly setup ~/.gemrc...
+      all = get_gems `gem list -r`
+      local = get_gems `gem list -l`
+      # note todo: gem list -r --source http://gems.github.com
+      new = all - local
+      new.each{|name, version|
+        command = "gem install #{name} --version=#{version} --no-ri"
+        puts command
+        if(name.include?('sdoc') || name.in? ['rdoc'])
+           puts 'skipping:' + name
+        else
+          if RUBY_PLATFORM=~ /mingw|mswin/
+             #System(command)
+          else
+             require 'rubygems'
+             ARGV=['install', name, '--version=', version, '--no-ri']
+             Process.wait fork {
+                load #{bin_dir}/gem"
+             } 
+          end
+        end
+      }
    end
 
 end
