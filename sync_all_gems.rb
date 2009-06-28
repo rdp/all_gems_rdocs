@@ -11,6 +11,11 @@ ENV['GEM_PATH'] = '/home/rdp/dev/linode/installs/mbari_gembox_187/lib/ruby/gems/
 
 bin_dir = '/home/rdp/dev/linode/installs/mbari_gembox_187/bin'
 
+# currently not yet necessary/useful
+#if RUBY_PLATFORM =~ /mswin|mingw/
+# bin_dir =  RbConfig::CONFIG['bindir']
+#end
+
 =begin
 doctest: parses right
 >> all = "\n *** LOCAL GEMS ***\n\n activesupport (2.3.2)\n cgi_multipart_eof_fix (2.5.0)"
@@ -65,13 +70,13 @@ if $0 == __FILE__
       # note todo: gem list -r --source http://gems.github.com
       new = all - local
       new.each{|name, version|
-        command = "gem install #{name} --version=#{version} --no-ri"
-        puts command
-        if(name.include?('sdoc') || name.in? ['rdoc'])
+        if(name.include?('sdoc') || name.in?(['rdoc']))
            puts 'skipping:' + name
         else
+        command = "gem install #{name} --version=#{version} --no-ri"
+        puts command
           if RUBY_PLATFORM=~ /mingw|mswin/
-             #System(command)
+             system(command)
           else
              require 'rubygems'
              ARGV=['install', name, '--version=', version, '--no-ri']
