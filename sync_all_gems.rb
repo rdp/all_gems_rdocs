@@ -80,7 +80,7 @@ if $0 == __FILE__
                system(command)
             else
                require 'rubygems'
-               ARGV=['install', name, '--version', version, '--no-ri']
+               ARGV=['install', name, '--version', version, '--no-ri', '--ignore-dependencies']
                puts ARGV.inspect
                Process.wait fork {
                   load "#{bin_dir}/gem"
