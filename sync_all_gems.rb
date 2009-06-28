@@ -3,7 +3,7 @@
 #  $ cat ~/.gemrc
 #  rdoc: --inline-source --line-numbers --format=html --template=hanna
 #
-puts 'syntax: --generate_rdoc, --install-missing [do export...gem update for straight updates, too...]'
+puts 'syntax: --generate_rdocs [unused], --install-missing'
 raise unless ARGV[0] if $0 == __FILE__
 # note: I only do this on the ilab, then rsync over...
 
