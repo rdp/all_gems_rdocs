@@ -41,11 +41,12 @@ def get_gems this_big_string
    return all_gems
 end
 
+require 'rubygems'
 require 'hash_set_operators'
 class Object
-def in? coll
- return coll.include? self
-end
+   def in? coll
+      return coll.include? self
+   end
 end
 
 if $0 == __FILE__
@@ -70,21 +71,22 @@ if $0 == __FILE__
       # note todo: gem list -r --source http://gems.github.com
       new = all - local
       new.each{|name, version|
-        if(name.include?('sdoc') || name.in?(['rdoc']))
-           puts 'skipping:' + name
-        else
-        command = "gem install #{name} --version=#{version} --no-ri"
-        puts command
-          if RUBY_PLATFORM=~ /mingw|mswin/
-             system(command)
-          else
-             require 'rubygems'
-             ARGV=['install', name, '--version=', version, '--no-ri']
-             Process.wait fork {
-                load #{bin_dir}/gem"
-             } 
-          end
-        end
+         if(name.include?('sdoc') || name.in?(['rdoc']))
+            puts 'skipping:' + name
+         else
+            command = "gem install #{name} --version=#{version} --no-ri"
+            puts command
+            if RUBY_PLATFORM=~ /mingw|mswin/
+               system(command)
+            else
+               require 'rubygems'
+               ARGV=['install', name, '--version', version, '--no-ri']
+               puts ARGV.inspect
+               Process.wait fork {
+                  load "#{bin_dir}/gem"
+               }
+            end
+         end
       }
    end
 
