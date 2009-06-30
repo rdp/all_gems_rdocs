@@ -49,6 +49,8 @@ class Object
    end
 end
 
+require 'timeout'
+
 if $0 == __FILE__
    if ARGV[0] == '--generate_rdocs'
       # shouldn't need to run this ever again
@@ -71,7 +73,7 @@ if $0 == __FILE__
       # note todo: gem list -r --source http://gems.github.com
       new = all - local
       new.each{|name, version|
-         if(name.include?('sdoc') || name.in?(['rdoc']))
+         if(name == 'rdoc')
             puts 'skipping:' + name
          else
             command = "gem install #{name} --version=#{version} --no-ri"
@@ -81,13 +83,22 @@ if $0 == __FILE__
             else
                require 'rubygems'
                ARGV=['install', name, '--version', version, '--no-ri', '--ignore-dependencies']
-               puts ARGV.inspect
-               Process.wait fork {
+               puts 'RUNNING', ARGV.inspect, "\n\n\n\n"
+               child = fork {
                   load "#{bin_dir}/gem"
                }
+               begin
+                 Timeout::timeout(60*5) {
+                      Process.wait child
+                 }
+               rescue Exception
+                 # timeout -- kill it :)
+                 Process.kill 9, child
+               end
             end
          end
       }
    end
 
 end
+puts 'done'
