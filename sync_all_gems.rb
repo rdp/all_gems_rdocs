@@ -8,6 +8,7 @@ raise unless ARGV[0] if $0 == __FILE__
 # note: I only do this on the ilab, then rsync over...
 
 ENV['GEM_PATH'] = '/home/rdp/dev/linode/installs/mbari_gembox_187/lib/ruby/gems/1.8'
+ENV['GEM_HOME'] = '' # the dyslexia between having a path and home is interesting.
 
 bin_dir = '/home/rdp/dev/linode/installs/mbari_gembox_187/bin'
 
