@@ -1,40 +1,105 @@
 # this does install and generate rdocs
+# requires
+#  $ cat ~/.gemrc
+#  rdoc: --inline-source --line-numbers --format=html --template=hanna
+#
+puts 'syntax: --generate_rdocs [unused], --install-missing'
+raise unless ARGV[0] if $0 == __FILE__
+# note: I only do this on the ilab, then rsync over...
 
-if `hostname`.strip == "ilab1"
-    puts 'on ilab'
-    on_ilab = true
+ENV['GEM_PATH'] = '/home/rdp/dev/linode/installs/mbari_gembox_187/lib/ruby/gems/1.8'
+ENV['GEM_HOME'] = '' # the dyslexia between having a path and home is interesting.
+
+bin_dir = '/home/rdp/dev/linode/installs/mbari_gembox_187/bin'
+
+# currently not yet necessary/useful
+#if RUBY_PLATFORM =~ /mswin|mingw/
+# bin_dir =  RbConfig::CONFIG['bindir']
+#end
+
+=begin
+doctest: parses right
+>> all = "\n *** LOCAL GEMS ***\n\n activesupport (2.3.2)\n cgi_multipart_eof_fix (2.5.0)"
+>> parsed = get_gems(all)
+>> parsed['activesupport']
+=> '2.3.2'
+>> parsed['cgi_multipart_eof_fix']
+=> '2.5.0'
+=end
+
+
+def get_gems this_big_string
+   all_gems = {}
+   this_big_string.each_line {|line|
+
+      line =~ /(.*) \((.*)\)/
+      next unless $1 # first few lines are bunk [?] necessary?
+      name = $1.strip # strip just in case...
+      versions = $2
+      versions = versions.split(', ')
+      all_gems[name] = versions.sort.last # latest one...
+   }
+   return all_gems
 end
 
-ENV['GEM_PATH'] = '/home/rdp/dev/linode/installs/mbari_gembox_187/lib/ruby/gems/1.8' if on_ilab
-bin_dir = on_ilab ? '/home/rdp/dev/linode/installs/mbari_gembox_187/bin' : '.'
-generate_rdoc = ARGV[0] == '--generate_rdoc'
-
-
-if generate_rdoc
-  all = `gem list`
-else
-  all = `gem list -r` # we don't do gems.github.com yet
+require 'rubygems'
+require 'hash_set_operators'
+class Object
+   def in? coll
+      return coll.include? self
+   end
 end
 
+require 'timeout'
 
-all.each_line {|line| 
- puts 'here1' + line
- line =~ /(.*) \((.*)\)/
- next unless $1
- name = $1
- versions = $2
- versions = versions.split(', ')
-if generate_rdoc
- require 'rubygems' # pre load it, so fork works
- ARGV=['rdoc', name, '--no-ri']
- p 'ARGV is', ARGV
- Process.wait fork {
-  load "#{bin_dir}/gem" # install rdocs appropo
- } 
- puts 'here--done with gem' + name
-else  
- command = "gem install #{name} --version=#{versions.sort.last} --no-rdoc --no-ri"
- # just in case system(command)
+if $0 == __FILE__
+   if ARGV[0] == '--generate_rdocs'
+      # shouldn't need to run this ever again
+      require 'rubygems' # pre load it, so fork works and doesn't have to reload rubygems which takes forever
+      all = `gem list -l`
+      parsed = get_gems all
+
+      parsed.each{|name, version|
+         ARGV=['rdoc', name, '--no-ri']
+         p 'ARGV is', ARGV
+         Process.wait fork {
+            load "#{bin_dir}/gem" # install rdocs appropo
+         }
+         puts 'here--done with gem' + name
+      }
+   elsif ARGV[0] == '--install-missing'
+      # note: this one assumes a correctly setup ~/.gemrc...
+      all = get_gems `gem list -r`
+      local = get_gems `gem list -l`
+      # note todo: gem list -r --source http://gems.github.com
+      new = all - local
+      new.each{|name, version|
+         if(name == 'rdoc')
+            puts 'skipping:' + name
+         else
+            command = "gem install #{name} --version=#{version} --no-ri"
+            puts command
+            if RUBY_PLATFORM=~ /mingw|mswin/
+               system(command)
+            else
+               require 'rubygems'
+               ARGV=['install', name, '--version', version, '--no-ri', '--ignore-dependencies']
+               puts 'RUNNING', ARGV.inspect, "\n\n\n\n"
+               child = fork {
+                  load "#{bin_dir}/gem"
+               }
+               begin
+                 Timeout::timeout(60*5) {
+                      Process.wait child
+                 }
+               rescue Exception
+                 # timeout -- kill it :)
+                 Process.kill 9, child
+               end
+            end
+         end
+      }
+   end
+
 end
-
-}
+puts 'done'
