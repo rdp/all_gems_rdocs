@@ -7,3 +7,4 @@ rsync -r /home/rdp/dev/linode/installs/mbari_gembox_187/lib/ruby/gems/*  rdp@fai
 ssh rdp@faithpromotingstories.org "touch ~/prod/gembox/tmp/restart.txt"
 curl http://allgems.faithpromotingstories.org/gems > /dev/null
 echo 'should be actualized now'
+echo `date`
