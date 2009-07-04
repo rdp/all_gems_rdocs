@@ -1,19 +1,26 @@
-# this does install and generate rdocs
-# requires
-#  $ cat ~/.gemrc
-#  rdoc: --inline-source --line-numbers --format=html --template=hanna
+# this updates /downloads any new gems
 #
-puts 'syntax: --generate_rdocs [unused], --install-missing'
+puts 'syntax: --install-missing'
 raise unless ARGV[0] if $0 == __FILE__
-# note: I only do this on the ilab, then rsync over...
+
+# note: currently I only do this on the ilab, then rsync over...
 # important: need to use same version of ruby [like 1.8] on both sides currently
+# also note: currently if you want github gems, you'll need to have github listed in your ~/.gemrc
+# and also have ~/.gemrc setup to use hanna "just right"
+#
+# :sources:
+# - http://gems.rubyforge.org/
+# - http://gems.github.com
+# :bulk_threshold: 1000
+# rdoc: --inline-source --line-numbers --format=html --template=hanna
+# gem:  --no-ri
 
 ENV['GEM_PATH'] = '/home/rdp/dev/linode/installs/mbari_gembox_187/lib/ruby/gems/1.8'
-ENV['GEM_HOME'] = ENV['GEM_PATH']
+ENV['GEM_HOME'] = ENV['GEM_PATH'] # make sure it only installs it in one place
 
 bin_dir = '/home/rdp/dev/linode/installs/mbari_gembox_187/bin'
 
-# currently not yet necessary/useful
+# currently not yet necessary
 #if RUBY_PLATFORM =~ /mswin|mingw/
 # bin_dir =  RbConfig::CONFIG['bindir']
 #end
@@ -54,7 +61,7 @@ end
 require 'timeout'
 
 if $0 == __FILE__
-   if ARGV[0] == '--generate_rdocs'
+   if ARGV[0] == '--generate_rdocs_for_all_installed_gems'
       # shouldn't need to run this ever again
       require 'rubygems' # pre load it, so fork works and doesn't have to reload rubygems which takes forever
       all = `gem list -l`
