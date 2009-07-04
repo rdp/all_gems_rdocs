@@ -1,0 +1,21 @@
+<img src="http://www.ruby-lang.org/images/logo.gif" />
+
+Welcome to some hanna-ified ruby core docs!
+
+Why? Because some gem rdocs aren't on the web, and lots aren't in the hanna theme, which is much easier to read.
+
+Core docs: <a href=doc/ruby-1.9.1-p129>1.9.1</a> <a href=doc/ruby-1.8.7-p174>1.8.7</a> <a href=doc/ruby-1.8.6-p369>1.8.6</a> <font color=grey>(<a href=src>src</a>)</font>.
+
+<a href=http://allgems.ruby-forum.com>Rubygem rdocs</a> for all rubyforge gems (incomplete but almost done generating the docs).
+
+Note: if you wish, you no longer have to install local rdoc+ri for gems [which saves a lot of time on install--for me this results in *significantly* faster gem installs].  To do so add this line to the bottom of ~/.gemrc.
+
+<code>gem:  --no-ri --no-rdoc</code>
+
+<hr/>
+
+Thanks to the <a href=http://github.com/mislav/hanna/tree/master>hanna rdoc template</a> and <a href=http://code.quirkey.com/gembox/>gembox</a> (and all the gem authors) for doing all the hard work :)
+
+Wanna help? <a href=http://wiki.github.com/rogerdpack/all_gems_rdocs/suggestions>Suggestions?</a> Please email rogerdpack at gmail or github.
+
+<a href=http://wiki.github.com/rogerdpack/all_gems_rdocs/useful-links>Other related sites</a>.
