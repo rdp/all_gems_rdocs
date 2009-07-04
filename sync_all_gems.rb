@@ -6,9 +6,10 @@
 puts 'syntax: --generate_rdocs [unused], --install-missing'
 raise unless ARGV[0] if $0 == __FILE__
 # note: I only do this on the ilab, then rsync over...
+# important: need to use same version of ruby [like 1.8] on both sides currently
 
 ENV['GEM_PATH'] = '/home/rdp/dev/linode/installs/mbari_gembox_187/lib/ruby/gems/1.8'
-ENV.delete 'GEM_HOME'
+ENV['GEM_HOME'] = ENV['GEM_PATH']
 
 bin_dir = '/home/rdp/dev/linode/installs/mbari_gembox_187/bin'
 
