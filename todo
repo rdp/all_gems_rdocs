@@ -5,6 +5,11 @@ actual todo:
  updater
 
 
+it wants the README on the main page
+
+it wants better easier "file navigation" for files from each gem
+
+
 some 'main page' so you can navigate from gem to core easily
 add in github gems, too :)
 (note the emails better)
