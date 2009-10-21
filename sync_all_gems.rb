@@ -1,10 +1,5 @@
 # this updates|downloads any new gems
 #
-if ARGV.length == 0
-  puts 'syntax: see file itself'
-  raise
-end
-
 # important: need to use same version of ruby [like 1.8] on both sides currently
 # also note: currently if you want github gems, you'll need to have github listed in your ~/.gemrc
 # and also you need to have ~/.gemrc setup to use hanna "just right"
@@ -73,6 +68,7 @@ module Kernel
   end
 end
 
+puts '--one-time-bootstrap'
 if ARGV[0] == '--one-time-bootstrap'
   for commands in [['install', 'gem_dependencies/rdoc*.gem', '--no-rdoc', '--no-ri'], ['install', 'gem_dependencies/*.gem']]
     ARGV.clear
@@ -115,6 +111,10 @@ end
 require 'sane'
 require 'timeout'
 
+puts '--run-client'
+puts '--install-missing (local only)'
+puts '--run-server'
+puts '--run-client'
 if ARGV[0] == '--generate_rdocs_for_all_installed_gems'
   # shouldn't need to run this ever again
   require 'rubygems' # pre load it, so fork works and doesn't have to reload rubygems which takes forever
