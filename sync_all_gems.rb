@@ -1,7 +1,9 @@
 # this updates|downloads any new gems
 #
-puts 'syntax: see file itself'
-raise unless ARGV[0] if $0 == __FILE__
+if ARGV.length == 0
+  puts 'syntax: see file itself'
+  raise
+end
 
 # important: need to use same version of ruby [like 1.8] on both sides currently
 # also note: currently if you want github gems, you'll need to have github listed in your ~/.gemrc
