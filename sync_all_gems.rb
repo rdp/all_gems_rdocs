@@ -87,6 +87,7 @@ if ARGV[0] == '--one-time-bootstrap'
     end
     puts 'done running', ARGV
   end
+  puts 'must also update ~/.gemrc'
 end
 
 =begin
