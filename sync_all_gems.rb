@@ -1,12 +1,8 @@
-# this updates /downloads any new gems
+# this updates|downloads any new gems
 #
-puts 'syntax: --install-missing'
-raise unless ARGV[0] if $0 == __FILE__
-
-# note: currently I only do this on the ilab, then rsync over...
 # important: need to use same version of ruby [like 1.8] on both sides currently
 # also note: currently if you want github gems, you'll need to have github listed in your ~/.gemrc
-# and also have ~/.gemrc setup to use hanna "just right"
+# and also you need to have ~/.gemrc setup to use hanna "just right"
 #
 # :sources:
 # - http://gems.rubyforge.org/
@@ -17,97 +13,152 @@ raise unless ARGV[0] if $0 == __FILE__
 
 ENV['GEM_PATH'] = '/home/rdp/dev/linode/installs/mbari_gembox_187/lib/ruby/gems/1.8'
 ENV['GEM_HOME'] = ENV['GEM_PATH'] # make sure it only installs it in one place
+require 'rubygems'
+Gem.clear_paths # just in case we need to...
+$bin_dir =  RbConfig::CONFIG['bindir']
 
-bin_dir = '/home/rdp/dev/linode/installs/mbari_gembox_187/bin'
+def rdoc_these_gems gems
+  gems.each{|name, version|
+    ARGV.clear
+    ARGV << 'rdoc'; ARGV << name; ARGV << '--no-ri'
+    p 'ARGV is', ARGV
+    Process.wait fork {
+      load "#{$bin_dir}/gem" # install rdocs appropo
+    }
+    puts 'here--done with gem' + name
+  }
+end
 
-# currently not yet necessary
-#if RUBY_PLATFORM =~ /mswin|mingw/
-# bin_dir =  RbConfig::CONFIG['bindir']
-#end
+module Kernel
+  def install_these_gems gems
+    gems.each{|name, version|
+      if(name == 'rdoc') # sdoc, etc. also would have installed this as a dependency--we don't let them, though
+        puts 'skipping:' + name
+      else
+
+        commands = ['install', name, '--no-ri', '--ignore-dependencies', '--rdoc']
+        if RUBY_PLATFORM=~ /mingw|mswin/
+          require 'win32-process'
+           # this way is still slow since it has to reload all the gems each time
+           # could be made faster by every so often you copy [and nuke] your stuff into the main.  I suppose.
+          child = Process.create :command_line => commands.join(' ')
+
+        else
+          require 'rubygems'
+          ARGV.clear
+          for name in commands  do; ARGV << name; end
+          if version
+            ARGV << '--version'
+            ARGV << version
+          end
+          child = fork {
+            load "#{$bin_dir}/gem"
+          }
+        end
+        begin
+          Timeout::timeout(60*5) {
+            Process.wait child
+          }
+        rescue Exception
+          # timeout -- kill it :)
+          Process.kill 9, child
+        end
+      end
+    }
+  end
+end
+
+puts '--one-time-bootstrap'
+if ARGV[0] == '--one-time-bootstrap'
+  commandss = []
+  commandss << ['install', 'gem_dependencies/rdoc*.gem', '--no-rdoc', '--no-ri']
+  for gem in Dir['gem_dependencies/*.gem']
+    commandss << ['install', gem, '--no-rdoc', '--no-ri']
+  end
+  for commands in commandss
+    ARGV.clear
+    for command in commands
+      ARGV << command
+    end
+    puts 'running', ARGV.inspect
+    begin
+      load "#{$bin_dir}/gem"
+    rescue Exception
+    end
+    puts 'done running', ARGV
+  end
+  puts 'must also update ~/.gemrc'
+end
 
 =begin
 doctest: parses right
 >> all = "\n *** LOCAL GEMS ***\n\n activesupport (2.3.2)\n cgi_multipart_eof_fix (2.5.0)"
->> parsed = get_gems(all)
+>> parsed = parse_gems(all)
 >> parsed['activesupport']
 => '2.3.2'
 >> parsed['cgi_multipart_eof_fix']
 => '2.5.0'
 =end
 
+def parse_gems this_big_string
+  all_gems = {}
+  this_big_string.each_line {|line|
 
-def get_gems this_big_string
-   all_gems = {}
-   this_big_string.each_line {|line|
-
-      line =~ /(.*) \((.*)\)/
-      next unless $1 # first few lines are bunk [?] necessary?
-      name = $1.strip # strip just in case...
-      versions = $2
-      versions = versions.split(', ')
-      all_gems[name] = versions.sort.last # latest one...
-   }
-   return all_gems
+    line =~ /(.*) \((.*)\)/
+    next unless $1 # first few lines are bunk [?] necessary?
+    name = $1.strip # strip just in case...
+    versions = $2
+    versions = versions.split(', ')
+    all_gems[name] = versions.sort.last # latest one...
+  }
+  return all_gems
 end
 
-require 'rubygems'
-require 'hash_set_operators'
-class Object
-   def in? coll
-      return coll.include? self
-   end
-end
-
+require 'sane'
 require 'timeout'
 
-if $0 == __FILE__
-   if ARGV[0] == '--generate_rdocs_for_all_installed_gems'
-      # shouldn't need to run this ever again
-      require 'rubygems' # pre load it, so fork works and doesn't have to reload rubygems which takes forever
-      all = `gem list -l`
-      parsed = get_gems all
+puts '--run-client'
+puts '--install-missing (local only)'
+puts '--run-server'
+puts '--run-client'
+if ARGV[0] == '--generate_rdocs_for_all_installed_gems'
+  # shouldn't need to run this ever again
+  require 'rubygems' # pre load it, so fork works and doesn't have to reload rubygems which takes forever
+  all = `gem list -l`
+  parsed = parse_gems all
+  rdoc_these_gems parsed
+elsif ARGV[0].in? ['--install-missing', '--run-server']
+  # note: this one assumes a correctly setup ~/.gemrc...
+  all = parse_gems `gem list -r`
+  local = parse_gems `gem list -l`
+  # todo: gem list -r --source http://gems.github.com
+  new = all - local
+  if ARGV[0] == '--install-missing'
+    install_these_gems new
+  else
+    require_rel 'server.rb'
+    puts 'running server'
+    start_and_run_drb_synchronized_server new.to_a, 'druby://0.0.0.0:3333'
+  end
+elsif ARGV[0] == '--run-client'
+  require 'drb'
+  remote_array = DRbObject.new nil, 'druby://10.52.81.149:3333'
+  require 'forkmanager'
+  pfm = Parallel::ForkManager.new(2)
 
-      parsed.each{|name, version|
-         ARGV=['rdoc', name, '--no-ri']
-         p 'ARGV is', ARGV
-         Process.wait fork {
-            load "#{bin_dir}/gem" # install rdocs appropo
-         }
-         puts 'here--done with gem' + name
-      }
-   elsif ARGV[0] == '--install-missing'
-      # note: this one assumes a correctly setup ~/.gemrc...
-      all = get_gems `gem list -r`
-      local = get_gems `gem list -l`
-      # note todo: gem list -r --source http://gems.github.com
-      new = all - local
-      new.each{|name, version|
-         if(name == 'rdoc')
-            puts 'skipping:' + name
-         else
-            command = "gem install #{name} --version=#{version} --no-ri"
-            puts command
-            if RUBY_PLATFORM=~ /mingw|mswin/
-               system(command)
-            else
-               require 'rubygems'
-               ARGV=['install', name, '--version', version, '--no-ri', '--ignore-dependencies']
-               puts 'RUNNING', ARGV.inspect, "\n\n\n\n"
-               child = fork {
-                  load "#{bin_dir}/gem"
-               }
-               begin
-                 Timeout::timeout(60*5) {
-                      Process.wait child
-                 }
-               rescue Exception
-                 # timeout -- kill it :)
-                 Process.kill 9, child
-               end
-            end
-         end
-      }
-   end
-
+  while(got = remote_array.pop)
+    puts got
+    if RUBY_VERSION !~ /mingw|mswin/ 
+      # linux
+      pfm.start(got) and next # blocks until a new fork is available
+       puts Process.pid
+      install_these_gems [got]
+      pfm.finish(0) # exit status 0 for this fork
+    else
+      install_these_gems [got] # single threaded
+    end
+  end
+  pfm.wait_all_children # let the laggers finish up
 end
+
 puts 'done'
