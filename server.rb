@@ -1,4 +1,4 @@
-
+# this is just a library--never actually run
 # load DRb
 require 'drb'
 require 'thread'
@@ -13,7 +13,7 @@ class Synchronized
 
   def method_missing meth, *args
     @mutex.synchronize {
-      @self.send(meth, *args) { |*incoming_args|  yield(*incoming_args) }
+      @self.send(meth, *args){ |*incoming_args|  yield(*incoming_args) }
     }
   end
 end
@@ -31,3 +31,8 @@ def start_and_run_drb_synchronized_server this_object, uri = nil #
 end
 
 end
+
+if $0 == __FILE__
+  start_and_run_drb_synchronized_server [1,2,3], "druby://0.0.0.0:3333"
+end
+  

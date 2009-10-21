@@ -36,10 +36,11 @@ module Kernel
         puts 'skipping:' + name
       else
 
-        commands = ['install', name, '--no-ri', '--ignore-dependencies']
+        commands = ['install', name, '--no-ri', '--ignore-dependencies', '--rdoc']
         if RUBY_PLATFORM=~ /mingw|mswin/
           require 'win32-process'
            # this way is still slow since it has to reload all the gems each time
+           # could be made faster by every so often you copy [and nuke] your stuff into the main.  I suppose.
           child = Process.create :command_line => commands.join(' ')
 
         else
@@ -132,7 +133,7 @@ elsif ARGV[0].in? ['--install-missing', '--run-server']
   else
     require_rel 'server.rb'
     puts 'running server'
-    start_and_run_drb_synchronized_server new.to_a, 'druby://localhost:3333'
+    start_and_run_drb_synchronized_server new.to_a, 'druby://0.0.0.0:3333'
   end
 elsif ARGV[0] == '--run-client'
   require 'drb'
