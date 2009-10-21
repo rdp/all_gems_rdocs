@@ -71,7 +71,12 @@ end
 
 puts '--one-time-bootstrap'
 if ARGV[0] == '--one-time-bootstrap'
-  for commands in [['install', 'gem_dependencies/rdoc*.gem', '--no-rdoc', '--no-ri'], ['install', 'gem_dependencies/*.gem']]
+  commandss = []
+  commandss << ['install', 'gem_dependencies/rdoc*.gem', '--no-rdoc', '--no-ri']
+  for gem in Dir['gem_dependencies/*.gem']
+    commandss << ['install', gem, '--no-rdoc', '--no-ri']
+  end
+  for commands in commandss
     ARGV.clear
     for command in commands
       ARGV << command
@@ -137,10 +142,23 @@ elsif ARGV[0].in? ['--install-missing', '--run-server']
   end
 elsif ARGV[0] == '--run-client'
   require 'drb'
-  remote_array = DRbObject.new nil, 'druby://localhost:3333'
+  remote_array = DRbObject.new nil, 'druby://10.52.81.149:3333'
+  require 'forkmanager'
+  pfm = Parallel::ForkManager.new(2)
+
   while(got = remote_array.pop)
     puts got
-    install_these_gems [got]
+    if RUBY_VERSION !~ /mingw|mswin/ 
+      # linux
+      pfm.start(got) and next # blocks until a new fork is available
+       puts Process.pid
+      install_these_gems [got]
+      pfm.finish(0) # exit status 0 for this fork
+    else
+      install_these_gems [got] # single threaded
+    end
   end
+  pfm.wait_all_children # let the laggers finish up
 end
+
 puts 'done'
