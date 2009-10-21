@@ -18,11 +18,16 @@ class Synchronized
   end
 end
 
-# start up the DRb service
-DRb.start_service nil, Synchronized.new(['line 1', 'line 2'])
+class Object
+def start_and_run_drb_synchronized_server this_object, uri = nil # 
 
-# We need the uri of the service to connect a client
-puts DRb.uri
+  # start up the DRb service
+  DRb.start_service uri, Synchronized.new(this_object)
 
-DRb.thread.join
+  # We need the uri of the service to connect a client
+  puts DRb.uri
 
+  DRb.thread.join
+end
+
+end

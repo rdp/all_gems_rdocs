@@ -116,12 +116,18 @@ require 'timeout'
       all = `gem list -l`
       parsed = parse_gems all
       rdoc_these_gems parsed
-   elsif ARGV[0] == '--install-missing'
+   elsif ARGV[0].in? ['--install-missing', '--run-server']
       # note: this one assumes a correctly setup ~/.gemrc...
       all = parse_gems `gem list -r`
       local = parse_gems `gem list -l`
       # todo: gem list -r --source http://gems.github.com
       new = all - local
-      install_these_gems new
+      if ARGV[0] == '--install-missing'
+        install_these_gems new
+      else
+        require_rel 'server.rb'
+        puts 'running server'
+        start_and_run_drb_synchronized_server new, 'druby://localhost:3333'
+      end
    end
 puts 'done'
