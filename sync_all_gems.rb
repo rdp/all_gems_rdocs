@@ -14,8 +14,8 @@ raise unless ARGV[0] if $0 == __FILE__
 # rdoc: --inline-source --line-numbers --format=html --template=hanna
 # gem:  --no-ri
 
-#ENV['GEM_PATH'] = '/home/rdp/dev/linode/installs/mbari_gembox_187/lib/ruby/gems/1.8'
-#ENV['GEM_HOME'] = ENV['GEM_PATH'] # make sure it only installs it in one place
+ENV['GEM_PATH'] = '/home/rdp/dev/linode/installs/mbari_gembox_187/lib/ruby/gems/1.8'
+ENV['GEM_HOME'] = ENV['GEM_PATH'] # make sure it only installs it in one place
 require 'rubygems'
 Gem.clear_paths # just in case we need to...
 $bin_dir =  RbConfig::CONFIG['bindir']
@@ -69,21 +69,24 @@ def install_these_gems gems
 end
 
 if ARGV[0] == '--one-time-bootstrap'
-  install_these_gems( {'mislav-hanna'=> nil, 'sane' => nil})
-  raise 'you are ready to go'
+   ARGV.clear
+   ARGV << 'install'
+   ARGV << 'gem_dependencies/*.gem'
+   load "#{$bin_dir}/gem"
+   raise 'not an error -- you should be ready to go'
 end
 
 =begin
 doctest: parses right
 >> all = "\n *** LOCAL GEMS ***\n\n activesupport (2.3.2)\n cgi_multipart_eof_fix (2.5.0)"
->> parsed = get_gems(all)
+>> parsed = parse_gems(all)
 >> parsed['activesupport']
 => '2.3.2'
 >> parsed['cgi_multipart_eof_fix']
 => '2.5.0'
 =end
 
-def get_gems this_big_string
+def parse_gems this_big_string
    all_gems = {}
    this_big_string.each_line {|line|
 
@@ -100,21 +103,18 @@ end
 require 'sane'
 require 'timeout'
 
-if $0 == __FILE__
-   if ARGV[0] == '--one-time-bootstrap'
-   elsif ARGV[0] == '--generate_rdocs_for_all_installed_gems'
+   if ARGV[0] == '--generate_rdocs_for_all_installed_gems'
       # shouldn't need to run this ever again
       require 'rubygems' # pre load it, so fork works and doesn't have to reload rubygems which takes forever
       all = `gem list -l`
-      parsed = get_gems all
+      parsed = parse_gems all
       rdoc_these_gems parsed
    elsif ARGV[0] == '--install-missing'
       # note: this one assumes a correctly setup ~/.gemrc...
-      all = get_gems `gem list -r`
-      local = get_gems `gem list -l`
-      # note todo: gem list -r --source http://gems.github.com
+      all = parse_gems `gem list -r`
+      local = parse_gems `gem list -l`
+      # todo: gem list -r --source http://gems.github.com
       new = all - local
+      install_these_gems new
    end
-
-end
 puts 'done'
