@@ -69,11 +69,18 @@ def install_these_gems gems
 end
 
 if ARGV[0] == '--one-time-bootstrap'
-   ARGV.clear
-   ARGV << 'install'
-   ARGV << 'gem_dependencies/*.gem'
-   load "#{$bin_dir}/gem"
-   raise 'not an error -- you should be ready to go'
+   for commands in [['install', 'gem_dependencies/rdoc*.gem', '--no-rdoc', '--no-ri'], ['install', 'gem_dependencies/*.gem']]
+     ARGV.clear
+     for command in commands
+       ARGV << command
+     end
+     puts 'running', ARGV.inspect
+     begin
+       load "#{$bin_dir}/gem"
+     rescue Exception
+     end
+     puts 'done running', ARGV
+   end
 end
 
 =begin
