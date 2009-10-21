@@ -51,7 +51,6 @@ module Kernel
             ARGV << '--version'
             ARGV << version
           end
-          puts 'RUNNING in single sub fork', ARGV.inspect, "\n\n\n\n"
           child = fork {
             load "#{$bin_dir}/gem"
           }
