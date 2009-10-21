@@ -23,66 +23,69 @@ Gem.clear_paths # just in case we need to...
 $bin_dir =  RbConfig::CONFIG['bindir']
 
 def rdoc_these_gems gems
-      gems.each{|name, version|
-         ARGV.clear
-         ARGV << 'rdoc'; ARGV << name; ARGV << '--no-ri'
-         p 'ARGV is', ARGV
-         Process.wait fork {
-            load "#{$bin_dir}/gem" # install rdocs appropo
-         }
-         puts 'here--done with gem' + name
+  gems.each{|name, version|
+    ARGV.clear
+    ARGV << 'rdoc'; ARGV << name; ARGV << '--no-ri'
+    p 'ARGV is', ARGV
+    Process.wait fork {
+      load "#{$bin_dir}/gem" # install rdocs appropo
     }
+    puts 'here--done with gem' + name
+  }
 end
 
+module Kernel
+  def install_these_gems gems
+    gems.each{|name, version|
+      if(name == 'rdoc') # sdoc, etc. also would have installed this as a dependency--we don't let them, though
+        puts 'skipping:' + name
+      else
 
-def install_these_gems gems
-      gems.each{|name, version|
-         if(name == 'rdoc') # sdoc, etc. also would have installed this as a dependency--we don't let them, though
-            puts 'skipping:' + name
-         else
-            command = "gem install #{name} --version=#{version} --no-ri"
-            puts command
-            if RUBY_PLATFORM=~ /mingw|mswin/
-               system(command) # the slow way
-            else
-               require 'rubygems'
-               ARGV.clear 
-               for name in ['install', name, '--no-ri', '--ignore-dependencies'] do; ARGV << name; end
-               if version
-                 # add it in
-                 ARGV << '--version'
-                 ARGV << version
-               end
-               puts 'RUNNING', ARGV.inspect, "\n\n\n\n"
-               child = fork {
-                  load "#{$bin_dir}/gem"
-               }
-               begin
-                 Timeout::timeout(60*5) {
-                      Process.wait child
-                 }
-               rescue Exception
-                 # timeout -- kill it :)
-                 Process.kill 9, child
-               end
-            end
-         end
-      }
+        commands = ['install', name, '--no-ri', '--ignore-dependencies']
+        if RUBY_PLATFORM=~ /mingw|mswin/
+          require 'win32-process'
+           # this way is still slow since it has to reload all the gems each time
+          child = Process.create :command_line => commands.join(' ')
+
+        else
+          require 'rubygems'
+          ARGV.clear
+          for name in commands  do; ARGV << name; end
+          if version
+            ARGV << '--version'
+            ARGV << version
+          end
+          puts 'RUNNING in single sub fork', ARGV.inspect, "\n\n\n\n"
+          child = fork {
+            load "#{$bin_dir}/gem"
+          }
+        end
+        begin
+          Timeout::timeout(60*5) {
+            Process.wait child
+          }
+        rescue Exception
+          # timeout -- kill it :)
+          Process.kill 9, child
+        end
+      end
+    }
+  end
 end
 
 if ARGV[0] == '--one-time-bootstrap'
-   for commands in [['install', 'gem_dependencies/rdoc*.gem', '--no-rdoc', '--no-ri'], ['install', 'gem_dependencies/*.gem']]
-     ARGV.clear
-     for command in commands
-       ARGV << command
-     end
-     puts 'running', ARGV.inspect
-     begin
-       load "#{$bin_dir}/gem"
-     rescue Exception
-     end
-     puts 'done running', ARGV
-   end
+  for commands in [['install', 'gem_dependencies/rdoc*.gem', '--no-rdoc', '--no-ri'], ['install', 'gem_dependencies/*.gem']]
+    ARGV.clear
+    for command in commands
+      ARGV << command
+    end
+    puts 'running', ARGV.inspect
+    begin
+      load "#{$bin_dir}/gem"
+    rescue Exception
+    end
+    puts 'done running', ARGV
+  end
 end
 
 =begin
@@ -96,40 +99,47 @@ doctest: parses right
 =end
 
 def parse_gems this_big_string
-   all_gems = {}
-   this_big_string.each_line {|line|
+  all_gems = {}
+  this_big_string.each_line {|line|
 
-      line =~ /(.*) \((.*)\)/
-      next unless $1 # first few lines are bunk [?] necessary?
-      name = $1.strip # strip just in case...
-      versions = $2
-      versions = versions.split(', ')
-      all_gems[name] = versions.sort.last # latest one...
-   }
-   return all_gems
+    line =~ /(.*) \((.*)\)/
+    next unless $1 # first few lines are bunk [?] necessary?
+    name = $1.strip # strip just in case...
+    versions = $2
+    versions = versions.split(', ')
+    all_gems[name] = versions.sort.last # latest one...
+  }
+  return all_gems
 end
 
 require 'sane'
 require 'timeout'
 
-   if ARGV[0] == '--generate_rdocs_for_all_installed_gems'
-      # shouldn't need to run this ever again
-      require 'rubygems' # pre load it, so fork works and doesn't have to reload rubygems which takes forever
-      all = `gem list -l`
-      parsed = parse_gems all
-      rdoc_these_gems parsed
-   elsif ARGV[0].in? ['--install-missing', '--run-server']
-      # note: this one assumes a correctly setup ~/.gemrc...
-      all = parse_gems `gem list -r`
-      local = parse_gems `gem list -l`
-      # todo: gem list -r --source http://gems.github.com
-      new = all - local
-      if ARGV[0] == '--install-missing'
-        install_these_gems new
-      else
-        require_rel 'server.rb'
-        puts 'running server'
-        start_and_run_drb_synchronized_server new, 'druby://localhost:3333'
-      end
-   end
+if ARGV[0] == '--generate_rdocs_for_all_installed_gems'
+  # shouldn't need to run this ever again
+  require 'rubygems' # pre load it, so fork works and doesn't have to reload rubygems which takes forever
+  all = `gem list -l`
+  parsed = parse_gems all
+  rdoc_these_gems parsed
+elsif ARGV[0].in? ['--install-missing', '--run-server']
+  # note: this one assumes a correctly setup ~/.gemrc...
+  all = parse_gems `gem list -r`
+  local = parse_gems `gem list -l`
+  # todo: gem list -r --source http://gems.github.com
+  new = all - local
+  if ARGV[0] == '--install-missing'
+    install_these_gems new
+  else
+    require_rel 'server.rb'
+    puts 'running server'
+    start_and_run_drb_synchronized_server new.to_a, 'druby://localhost:3333'
+  end
+elsif ARGV[0] == '--run-client'
+  require 'drb'
+  remote_array = DRbObject.new nil, 'druby://localhost:3333'
+  while(got = remote_array.pop)
+    puts got
+    install_these_gems [got]
+  end
+end
 puts 'done'

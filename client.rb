@@ -12,6 +12,6 @@ remote_array = DRbObject.new nil, ARGV.shift
 
 puts remote_array.size
 
-remote_array << 1
+puts remote_array.pop
 
 puts remote_array.size
