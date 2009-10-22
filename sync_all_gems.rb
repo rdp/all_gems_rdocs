@@ -1,3 +1,4 @@
+#!/usr/bin/env ruby
 # this updates|downloads any new gems
 #
 # important: need to use same version of ruby [like 1.8] on both sides currently
