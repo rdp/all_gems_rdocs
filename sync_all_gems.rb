@@ -87,7 +87,7 @@ if ARGV[0] == '--one-time-bootstrap'
   commandss = []
   commandss << ['install', 'gem_dependencies/rdoc*.gem', '--no-rdoc', '--no-ri']
   for gem in Dir['gem_dependencies/*.gem']
-    commandss << ['install', gem, '--no-rdoc', '--no-ri']
+    commandss << ['install', gem, '--no-rdoc', '--no-ri', '--ignore-dependencies']
   end
   for commands in commandss
     ARGV.clear
@@ -173,7 +173,7 @@ elsif ARGV[0].in? ['--run-client', '--run-web-client']
     require 'open-uri'
     class WebGuy
       def pop
-        open('http://localhost:5678/next') {|f| f.read }
+        open('http://allgems.ruby-forum.com/next') {|f| f.read }
       end
     end    
     remote_array = WebGuy.new
