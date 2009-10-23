@@ -178,7 +178,7 @@ elsif ARGV[0].in? ['--run-client', '--run-web-client']
     require 'open-uri'
     class WebGuy
       def pop
-        open('http://allgems.ruby-forum.com/next') {|f| f.read }
+        open('http://allgems.ruby-forum.com/next') {|f| a = f.read; a == '' ? nil : eval(a) }
       end
     end    
     remote_array = WebGuy.new
