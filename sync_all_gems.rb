@@ -21,6 +21,11 @@ if $0 == __FILE__
 end
 $bin_dir =  RbConfig::CONFIG['bindir']
 
+for dir in Dir['lib/*/lib']
+ $: << dir
+end
+
+
 module Process
   require 'timeout'
   def self.kill_process_after(pid, seconds)
