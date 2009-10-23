@@ -58,11 +58,11 @@ end
 module Kernel
   def install_these_gems gems
     gems.each{|name, version|
-      if(name == 'rdoc') # sdoc, etc. also would have installed this as a dependency--we don't let them, though
+      if(name == 'rdoc' || name.include?("sdoc-") || name.include?("hanna-")) # since we use rubygems [sigh] it forces death on us to have plugins installed that require a higher version
         puts 'skipping:' + name
       else
 
-        commands = ['install', name, '--no-ri', '--ignore-dependencies', '--rdoc']
+        commands = ['install', name, '--no-ri', '--ignore-dependencies', '--rdoc', '--force']
         if RUBY_PLATFORM=~ /mingw|mswin/
           require 'win32-process'
           # this way is still slow since it has to reload all the gems each time
