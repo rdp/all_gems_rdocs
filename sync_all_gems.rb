@@ -92,7 +92,7 @@ if ARGV[0] == '--one-time-bootstrap'
   commandss = []
   commandss << ['install', 'gem_dependencies/rdoc*.gem', '--no-rdoc', '--no-ri']
   for gem in Dir['gem_dependencies/*.gem']
-    commandss << ['install', gem, '--no-rdoc', '--no-ri', '--ignore-dependencies']
+    commandss << ['install', gem, '--no-rdoc', '--no-ri'] # WANT dependencies here...we want them, if possible
   end
   for commands in commandss
     ARGV.clear
