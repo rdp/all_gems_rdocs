@@ -11,10 +11,13 @@
 # rdoc: --inline-source --line-numbers --format=html --template=hanna
 # gem:  --no-ri
 
-ENV['GEM_PATH'] = '/home/rdp/dev/linode/installs/mbari_gembox_187/lib/ruby/gems/1.8'
-ENV['GEM_HOME'] = ENV['GEM_PATH'] # make sure it only installs it in one place
-require 'rubygems'
-Gem.clear_paths # just in case we need to...
+if $0 == __FILE__
+  # setup
+  ENV['GEM_PATH'] = '/home/rdp/dev/linode/installs/mbari_gembox_187/lib/ruby/gems/1.8'
+  ENV['GEM_HOME'] = ENV['GEM_PATH'] # make sure it only installs it in one place
+  require 'rubygems'
+  Gem.clear_paths # just in case we need to...
+end
 $bin_dir =  RbConfig::CONFIG['bindir']
 
 def rdoc_these_gems gems
@@ -116,7 +119,28 @@ end
 require 'sane'
 require 'timeout'
 
-puts '--run-client'
+class Object
+
+  # which => '--install-missing' or '--run-server' or '--just-list'
+  def do_install_or_server which
+    all = parse_gems `gem list -r`
+    local = parse_gems `gem list -l`
+    # todo: gem list -r --source http://gems.github.com
+    new = all - local
+    if which == '--install-missing'
+      install_these_gems new
+    elsif which == '--run-server'
+      require_rel 'server.rb'
+      puts 'running server'
+      start_and_run_drb_synchronized_server new.to_a, 'druby://0.0.0.0:3333'
+    end
+    new
+  end
+
+end
+
+
+puts '--run-web-client'
 puts '--install-missing (local only)'
 puts '--run-server'
 puts '--run-client'
@@ -128,20 +152,20 @@ if ARGV[0] == '--generate_rdocs_for_all_installed_gems'
   rdoc_these_gems parsed
 elsif ARGV[0].in? ['--install-missing', '--run-server']
   # note: this one assumes a correctly setup ~/.gemrc...
-  all = parse_gems `gem list -r`
-  local = parse_gems `gem list -l`
-  # todo: gem list -r --source http://gems.github.com
-  new = all - local
-  if ARGV[0] == '--install-missing'
-    install_these_gems new
-  else
-    require_rel 'server.rb'
-    puts 'running server'
-    start_and_run_drb_synchronized_server new.to_a, 'druby://0.0.0.0:3333'
-  end
-elsif ARGV[0] == '--run-client'
+  do_install_or_server ARGV[0]
+elsif ARGV[0].in? ['--run-client', '--run-web-client']
   require 'drb'
-  remote_array = DRbObject.new nil, 'druby://10.52.81.149:3333'
+  if ARGV[0] == '--run-client'
+    remote_array = DRbObject.new nil, 'druby://10.52.81.149:3333'
+  else
+    require 'open-uri'
+    class WebGuy
+      def pop
+        open('http://localhost:5678/next') {|f| f.read }
+      end
+    end    
+    remote_array = WebGuy.new
+  end
   require 'forkmanager'
   pfm = Parallel::ForkManager.new(2)
 
@@ -150,7 +174,7 @@ elsif ARGV[0] == '--run-client'
     if RUBY_VERSION !~ /mingw|mswin/ 
       # linux
       pfm.start(got) and next # blocks until a new fork is available
-       puts Process.pid
+      puts Process.pid
       install_these_gems [got]
       pfm.finish(0) # exit status 0 for this fork
     else
