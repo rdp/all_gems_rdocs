@@ -1,3 +1,4 @@
+#!/usr/bin/env ruby
 # this updates|downloads any new gems
 #
 # important: need to use same version of ruby [like 1.8] on both sides currently
@@ -20,16 +21,33 @@ if $0 == __FILE__
 end
 $bin_dir =  RbConfig::CONFIG['bindir']
 
-def rdoc_these_gems gems
-  gems.each{|name, version|
-    ARGV.clear
-    ARGV << 'rdoc'; ARGV << name; ARGV << '--no-ri'
-    p 'ARGV is', ARGV
-    Process.wait fork {
-      load "#{$bin_dir}/gem" # install rdocs appropo
+module Process
+  require 'timeout'
+  def self.kill_process_after(pid, seconds)
+    begin
+      Timeout::timeout(60*5) {
+        Process.wait pid
+      }
+    rescue Exception
+      # timeout -- kill it :) -- does this work in doze?
+      Process.kill 9, pid
+    end
+  end
+end
+
+class Object
+  def rdoc_these_gems gems
+    gems.each{|name, version|
+      ARGV.clear
+      ARGV << 'rdoc'; ARGV << name; ARGV << '--no-ri'
+      p 'ARGV is', ARGV
+      pid = fork {
+        load "#{$bin_dir}/gem" # install rdocs appropo
+      }
+      Process.kill_process_after(pid, 5*60)
+      puts 'here--done with gem' + name
     }
-    puts 'here--done with gem' + name
-  }
+  end
 end
 
 module Kernel
@@ -42,8 +60,8 @@ module Kernel
         commands = ['install', name, '--no-ri', '--ignore-dependencies', '--rdoc']
         if RUBY_PLATFORM=~ /mingw|mswin/
           require 'win32-process'
-           # this way is still slow since it has to reload all the gems each time
-           # could be made faster by every so often you copy [and nuke] your stuff into the main.  I suppose.
+          # this way is still slow since it has to reload all the gems each time
+          # could be made faster by every so often you copy [and nuke] your stuff into the main.  I suppose.
           child = Process.create :command_line => commands.join(' ')
 
         else
@@ -58,14 +76,7 @@ module Kernel
             load "#{$bin_dir}/gem"
           }
         end
-        begin
-          Timeout::timeout(60*5) {
-            Process.wait child
-          }
-        rescue Exception
-          # timeout -- kill it :)
-          Process.kill 9, child
-        end
+        Process.kill_process_after(child, 60*5)
       end
     }
   end
@@ -90,6 +101,7 @@ if ARGV[0] == '--one-time-bootstrap'
     end
     puts 'done running', ARGV
   end
+  puts 'must also update ~/.gemrc'
 end
 
 =begin
@@ -171,7 +183,7 @@ elsif ARGV[0].in? ['--run-client', '--run-web-client']
 
   while(got = remote_array.pop)
     puts got
-    if RUBY_VERSION !~ /mingw|mswin/ 
+    if RUBY_VERSION !~ /mingw|mswin/
       # linux
       pfm.start(got) and next # blocks until a new fork is available
       puts Process.pid
